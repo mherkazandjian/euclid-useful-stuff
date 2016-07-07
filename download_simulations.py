@@ -43,6 +43,7 @@ def download_file(url, local_url):
     """
     taken from http://stackoverflow.com/questions/16694907/how-to-download-large-file-in-python-with-requests-py
     """
+    print('downloading {} to {}'.format(url, local_url))
     r = requests.get(url, stream=True, auth=auth)
     with open(local_url, 'wb') as f:
         for chunk in r.iter_content(chunk_size=1024):
@@ -92,9 +93,6 @@ def download_task(task_name):
     for file in files:
         link = urllib2.urlparse.urljoin(base_url, task_name + '/' + file)
         path = os.path.join(task_name, file)
-        # DEBUG
-        # print(link)
-        # print(path)
         download_file(link, path)
 
     # create the data dir and download the files in the task/data dir
@@ -105,13 +103,10 @@ def download_task(task_name):
     for file in data_files:
         link = urllib2.urlparse.urljoin(base_url, task_name + '/data/' + file)
         path = os.path.join(data_dir_path, file)
-        # DEBUG
-        # print(link)
-        # print(path)
         download_file(link, path)
 
-for task in tasks[0:1]:
-    # print(task)
+for task in tasks:
+    print(task)
     download_task(task)
 
 print('done')
