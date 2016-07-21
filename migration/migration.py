@@ -1,0 +1,130 @@
+"""
+<keywords>
+python, migration, git, svn, utilities
+</keywords>
+<description>
+module that provides implementation of function that help migrate a repo from
+svn to git
+</description>
+<seealso>
+</seealso>
+"""
+import os
+from subprocess import Popen, PIPE
+import shlex
+import pdb
+
+def run_command(cmd, *args, **kwargs):
+    """wrapped around Popen"""
+    Popen(shlex.split(cmd), *args, **kwargs).wait()
+
+def get_authors(path_to_svn_migration_script, repo_url):
+    """
+    dump the authors list into a file called authors.txt
+
+    :param path_to_svn_migration_script:
+    :param repo_url:
+    """
+    cmd = 'java -jar {} authors {}'.format(
+        os.path.expanduser(path_to_svn_migration_script),
+        repo_url)
+
+    prcs = Popen(shlex.split(cmd), stdout=PIPE)
+    stdout, stderr = prcs.communicate()
+
+    with open('authors.txt', 'w') as fobj:
+        fobj.write(stdout.decode())
+
+
+def get_all_branches(project):
+    """execute the command 'git branch -a' and returns the branches as a list
+     of strings"""
+    cmd = 'git branch -r'
+    prcs = Popen(shlex.split(cmd), cwd=project, stdout=PIPE)
+    retval = []
+    output, errors = prcs.communicate()
+    #print(output)
+    for branch in str(output).strip().split():
+        branch_name = branch.replace('*', '').replace('\\n', '').strip()
+        if branch_name == "b'":
+            continue
+        retval.append(branch_name)
+    return retval
+
+
+def create_tag_from_branch(project, branch):
+    """given a branch name, a tag is created and the 
+    branch is deleted"""
+    run_command('git checkout {}'.format(branch), cwd=project)
+    run_command('git tag {}'.format(branch.split('/')[-1]), cwd=project)
+
+def create_branch_from_remote(project, branch):
+    """given a remote branch name a local branch is created"""
+    run_command('git checkout {}'.format(branch), cwd=project)
+    run_command('git checkout -B {}'.format(branch.split('/')[-1]), cwd=project)
+
+def create_tags(project):
+    """given a string list of branches, all branches that match
+    pattens defined in this function are tagged and the branch
+    itself is deleted"""
+
+    svn_tag_patterns = ['origin/tags',
+                        'remotes/origin/tags']
+
+    all_branches = get_all_branches(project)
+
+    def is_a_tag_branch(branch):
+        for pattern in svn_tag_patterns:
+            if pattern in branch:
+                return True
+        return False
+        
+    tag_branches = list(filter(is_a_tag_branch, all_branches))
+
+    for branch in tag_branches:
+        create_tag_from_branch(project, branch)
+
+def create_branches(project):
+    """create branches from non tags"""
+    svn_tag_patterns = ['origin/tags',
+                        'remotes/origin/tags']
+
+    all_branches = get_all_branches(project)
+
+    def is_not_a_tag_branch(branch):
+        for pattern in svn_tag_patterns:
+            if pattern in branch:
+                return False
+        return True
+        
+    remote_branches = list(filter(is_not_a_tag_branch, all_branches))
+
+    for remote_branch in remote_branches:
+        if 'trunk' in remote_branch:
+            continue
+        create_branch_from_remote(project, remote_branch)
+
+
+def delete_all_remotes(project):
+    """deleted the remotes dir in .git/refs
+    rm -fvr .git/refs/remotes/*
+    """
+    run_command("rm -fvr .git/refs/remotes/origin", cwd=project)
+
+
+def add_remotes(project, url_base):
+    """add the remotes to the project
+    git remote add origin https://<user>@bitbucket.org/<user>/<repo>.git
+    """
+    run_command("git remote add gitlab {}/{}.git".format(url_base, project),
+                cwd=project)
+
+    
+def sync(project):
+    """
+    git push -u origin --all
+    git push --tags
+    """
+    run_command("git push -u gitlab --all", cwd=project)
+    run_command("git push --tags", cwd=project)
+
