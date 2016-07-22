@@ -16,6 +16,7 @@ import pdb
 
 def run_command(cmd, *args, **kwargs):
     """wrapped around Popen"""
+    print('>>> {}'.format(cmd))
     Popen(shlex.split(cmd), *args, **kwargs).wait()
 
 def get_authors(path_to_svn_migration_script, repo_url):
@@ -126,5 +127,5 @@ def sync(project):
     git push --tags
     """
     run_command("git push -u gitlab --all", cwd=project)
-    run_command("git push --tags", cwd=project)
+    run_command("git push -u gitlab --tags", cwd=project)
 
