@@ -15,16 +15,23 @@ import shlex
 import pdb
 
 def run_command(cmd, *args, **kwargs):
-    """wrapped around Popen"""
+    """wrapped around Popen
+
+    :param str cmd: The command to be executed
+    :param args: args passed to Popen
+    :param kwargs: kwargs passed to Popen
+    """
     print('>>> {}'.format(cmd))
     Popen(shlex.split(cmd), *args, **kwargs).wait()
+
 
 def get_authors(path_to_svn_migration_script, repo_url):
     """
     dump the authors list into a file called authors.txt
 
-    :param path_to_svn_migration_script:
-    :param repo_url:
+    :param str path_to_svn_migration_script: path to the jar file of script
+     that can be found on # https://bitbucket.org/atlassian/svn-migration-scripts/downloads/svn-migration-scripts.jar
+    :param str repo_url: the url to svn repository
     """
     cmd = 'java -jar {} authors {}'.format(
         os.path.expanduser(path_to_svn_migration_script),
@@ -39,7 +46,12 @@ def get_authors(path_to_svn_migration_script, repo_url):
 
 def get_all_branches(project):
     """execute the command 'git branch -a' and returns the branches as a list
-     of strings"""
+     of strings. The command is executed in the dir specified by the project
+     parameter.
+
+     :param str project: the name of the project
+     :return: a list of strings of the branch names
+    """
     cmd = 'git branch -r'
     prcs = Popen(shlex.split(cmd), cwd=project, stdout=PIPE)
     retval = []
@@ -54,20 +66,31 @@ def get_all_branches(project):
 
 
 def create_tag_from_branch(project, branch):
-    """given a branch name, a tag is created and the 
-    branch is deleted"""
+    """given a branch name, a tag is created and the branch is deleted. The
+     command is executed in the dir specified by the project parameter.
+
+    :param str project: the name of the project
+    :param str branch: """
     run_command('git checkout {}'.format(branch), cwd=project)
     run_command('git tag {}'.format(branch.split('/')[-1]), cwd=project)
 
+
 def create_branch_from_remote(project, branch):
-    """given a remote branch name a local branch is created"""
+    """given a remote branch name a local branch is created.  The command is
+     executed in the dir specified by the project parameter.
+
+    :param str project: the name of the project
+    :param str branch:
+    """
     run_command('git checkout {}'.format(branch), cwd=project)
     run_command('git checkout -B {}'.format(branch.split('/')[-1]), cwd=project)
 
 def create_tags(project):
-    """given a string list of branches, all branches that match
-    pattens defined in this function are tagged and the branch
-    itself is deleted"""
+    """given a string list of branches, all branches that match pattens
+     defined in this function are tagged and the branch itself is deleted
+     The command is executed in the dir specified by the project parameter.
+    :param str project: the name of the project
+    """
 
     svn_tag_patterns = ['origin/tags',
                         'remotes/origin/tags']
@@ -85,8 +108,13 @@ def create_tags(project):
     for branch in tag_branches:
         create_tag_from_branch(project, branch)
 
+
 def create_branches(project):
-    """create branches from non tags"""
+    """create branches from non tags. The command is executed in the dir
+     specified by the project parameter.
+
+    :param str project: the name of the project
+    """
     svn_tag_patterns = ['origin/tags',
                         'remotes/origin/tags']
 
@@ -107,8 +135,10 @@ def create_branches(project):
 
 
 def delete_all_remotes(project):
-    """deleted the remotes dir in .git/refs
-    rm -fvr .git/refs/remotes/*
+    """deleted the remotes dir in .git/refs via "rm -fvr .git/refs/remotes/*"
+    The command is executed in the dir specified by the project parameter.
+
+    :param str project: the name of the project
     """
     run_command("rm -fvr .git/refs/remotes/origin", cwd=project)
 
@@ -116,6 +146,10 @@ def delete_all_remotes(project):
 def add_remotes(project, url_base):
     """add the remotes to the project
     git remote add origin https://<user>@bitbucket.org/<user>/<repo>.git
+    The command is executed in the dir specified by the project parameter.
+
+    :param str project: the name of the project
+    :param str url_base:
     """
     run_command("git remote add gitlab {}/{}.git".format(url_base, project),
                 cwd=project)
@@ -123,8 +157,11 @@ def add_remotes(project, url_base):
     
 def sync(project):
     """
-    git push -u origin --all
-    git push --tags
+    git push -u origin --all project
+    git push --tags project
+    The command is executed in the dir specified by the project parameter.
+
+    :param str project: the name of the project
     """
     run_command("git push -u gitlab --all", cwd=project)
     run_command("git push -u gitlab --tags", cwd=project)
