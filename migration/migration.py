@@ -56,11 +56,9 @@ def get_all_branches(project):
     prcs = Popen(shlex.split(cmd), cwd=project, stdout=PIPE)
     retval = []
     output, errors = prcs.communicate()
-    #print(output)
-    for branch in str(output).strip().split():
-        branch_name = branch.replace('*', '').replace('\\n', '').strip()
-        if branch_name == "b'":
-            continue
+
+    for branch in output.encode().strip().split('\n'):
+        branch_name = branch.replace('*', '').strip()
         retval.append(branch_name)
     return retval
 
