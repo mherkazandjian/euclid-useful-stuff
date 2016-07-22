@@ -16,4 +16,4 @@ pytest
 foo
 misc
 tmp
-
+*.txt
