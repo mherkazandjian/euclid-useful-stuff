@@ -14,6 +14,68 @@ from subprocess import Popen, PIPE
 import shlex
 import pdb
 
+
+def migrate_project(base_svn_url,
+                    base_git_url,
+                    relative_project_url):
+    """
+    Migrates an svn project to a git repo. In the example below, a project
+    at the svn url http://aaa.bbb.ccc/svn/MY/PROJECT/REL/PATH/myProjName
+    is migrated to the git repo with the following path
+    http://git.bla.bla/user/myProjName
+
+    .. note:: the script must be executed in a dir where the file authors.txt
+     is placed.
+
+    .. code-block:: python
+
+        migrate_project(base_svn_url='http://aaa.bbb.ccc/svn',
+                        base_git_url='http://git.bla.bla/user',
+                        relative_project_url='MY/PROJECT/REL/PATH/myProjName')
+
+
+    the directory structure should look like this:
+
+    WORKDIR/authors.txt
+            migration.py
+
+    After the migration there will be a new dir WORKDIR/myProjName
+
+    :param base_svn_url: The base url of the svn repo
+    :param base_git_url: The base url of the git repo
+    :param relative_project_url: The relative path of the project on the svn
+     repo.
+    """
+
+    # get the project name from the project path
+    project_name = relative_project_url.split('/')[-1]
+
+    # clone the repository
+    cmd = ('git svn clone --stdlayout --authors-file=authors.txt '
+           '{euclid_svn}/{project_path} {project_name}').format(
+        euclid_svn=base_svn_url,
+        project_path=relative_project_url,
+        project_name=project_name)
+    run_command(cmd)
+
+    # add the authors file
+    cmd = 'git config svn.authorsfile ../authors.txt'
+    run_command(cmd, cwd=project_name)
+
+    # fetch the repo
+    cmd = 'git svn fetch'
+    run_command(cmd, cwd=project_name)
+
+    # clean the repo (branches/tags/remotes)
+    create_tags(project_name)
+    create_branches(project_name)
+    delete_all_remotes(project_name)
+
+    # add the remotes and sync to gitlab
+    add_remotes(project_name, base_git_url)
+    sync(project_name)
+
+
 def run_command(cmd, *args, **kwargs):
     """wrapped around Popen
 
