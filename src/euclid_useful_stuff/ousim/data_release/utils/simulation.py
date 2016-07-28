@@ -1,3 +1,7 @@
+"""
+.. todo:: add doc
+"""
+from __future__ import print_function
 import os
 import sys
 import fnmatch
@@ -11,18 +15,24 @@ import numpy
 import pylab
 from pylab import log10, cm
 
-from IPython.core.debugger import Tracer
+from pdb import set_trace
 
 from astropy.io import fits
-from astropy import wcs
 
 from EuclidImageBinding import NispSurveyExposure as SurveyExposure
+from EuclidImageBinding import makeWcs, degrees
 
 import catalog
 
 
 class SubReleaseInfo(object):
+    """
+
+    """
     def __init__(self):
+        """
+        constructor
+        """
         self.path = None
         self.three_layer = None
 
@@ -39,8 +49,13 @@ class SubReleaseInfo(object):
 
 
 class SubRelease(object):
+
     def __init__(self):
+        """
+        constructor
+        """
         pass
+
     def _add(self, release, sub_release, sub_sub_release, isInitialized):
         if hasattr(self, sub_sub_release):
             raise AttributeError('''sub-release already exists''')
@@ -55,7 +70,11 @@ class SubRelease(object):
 
 class _Releases(object):
     def __init__(self):
+        """
+        constructor
+        """
         pass
+
     def _add(self, release, sub_release, isInitialized=False):
 
         if hasattr(self, release) is False:
@@ -95,12 +114,13 @@ releases._add('SC2', sub_release='NIP_test3')
 releases._add('SC2', sub_release='NIP_test3', isInitialized=True)
 releases._add('SC2', sub_release='NIP_R1')
 releases._add('SC2', sub_release='NIP_R1', isInitialized=True)
+releases._add('SC2', sub_release='NIP_R3')
+# releases._add('SC2', sub_release='NIP_R3', isInitialized=True)
 
 
 class DetectorExposure(object):
-    """Detector exposure container class that includes only the info and data
-    needed by WP2500 and WP3600"""
-
+    """Detector exposure container class that includes only the info and
+     data"""
     def __init__(self, pid, dither, detector, nirfilter):
         """constructor"""
         self.pid = pid
@@ -144,26 +164,29 @@ class DetectorExposure(object):
 
     def bbox_wcs(self):
         """returns the corners of the detector bounding box in wcs coords.
+
         :return: a tuple of two arrays (ra, dec). ra and dec are the
         coordinates of corners of the bbox of the detector starting with the
         bottom left corner and moving counter-clockwise."""
 
-        header = self._sci.header
+        naxis1, naxis2 = self.sci.shape
 
         # the image corners (closed curve)
-        pixcrd = numpy.array([# bottom left
+        pixcrds = numpy.array([# bottom left
                               [0, 0],
                               # bottom right
-                              [0, header['NAXIS1']],
+                              [0, naxis1],
                               # top right
-                              [header['NAXIS1'], header['NAXIS2']],
+                              [naxis1, naxis2],
                               # top left
-                              [header['NAXIS2'], 0],
+                              [naxis2, 0],
                               # bottom left
-                              [0, 0]], 'f4')
+                              [0, 0]], 'f8')
 
-        ra, dec = self.wcs.wcs_pix2world(pixcrd, 1).T
-        return ra, dec
+        retval = numpy.array([self.wcs.pixelToSky(x, y).getPosition(degrees)
+                              for x, y in pixcrds],
+                             'f8')
+        return retval.reshape(retval.shape[0:2])
 
     def plot_bbox(self, pid=0, dither=1, detector=0, nirfilter='Y', color='r'):
         """given the info to identify the detector uniquely plot the bounding
@@ -195,7 +218,11 @@ class Simulation(object):
                  rootdir=None,
                  release=None,
                  catalog='TU',
-                 three_layer=False):
+                 three_layer=False,
+                 regenerate_cache=False):
+        """
+        constructor
+        """
 
         self.rootdir = rootdir
         '''The topdir containing all the simulated data'''
@@ -232,7 +259,7 @@ class Simulation(object):
         self.mdb = MDB(os.path.join(rootdir, 'MDB'))
         """the object of the MDB handler of the simulated data"""
 
-        if os.path.isfile(self._cache_info_file):
+        if not regenerate_cache and os.path.isfile(self._cache_info_file):
             print('found cache info file:\n\t %s' % self._cache_info_file)
             self.info = numpy.load(self._cache_info_file)
         else:
@@ -297,9 +324,6 @@ class Simulation(object):
             sys.stdout.flush()
             info[i]['path'] = path
 
-            # .. todo:: fix the following bug:
-            #    metadata = SurveyExposure.readFits(path).getMetadata()
-            #    print metadata.keys() #! catastrophic failiur
             exposure = SurveyExposure.readFits(path)
             metadata = exposure.getMetadata()
 
@@ -338,9 +362,9 @@ class Simulation(object):
         if self.release.major == 'SR1b':
             fname = os.path.join(self.rootdir, self.catalog, 'STARS', 'TU')
             self.catmanager = catalog.Manager(rootdir=fname)
-            print 'setup the catalog manager'
+            print('setup the catalog manager')
         elif self.release.major == 'SR1c':
-            print 'skipping setting up the catalog manager'
+            print('skipping setting up the catalog manager')
 
     def fetch_catalog(self, pid=0, dither=1, nirfilter='Y', cattype='STARCAT'):
         """get the catalog data the fits file data"""
@@ -364,7 +388,8 @@ class Simulation(object):
                                   (self.info['DITHSEQ'] == dither) *
                                   (self.info['FILTER'] == nirfilter))]
 
-    def detector(self, pid=0, dither=1, detector=0, nirfilter='Y'):
+    def detector(self, pid=0, dither=1, detector=0, nirfilter='Y',
+                 verbose=True):
         """give the pointing id and the dither index and the detector index
         returns a DetectorExposur object.
 
@@ -379,46 +404,39 @@ class Simulation(object):
              det = sim.detector(pid=0, dither=1, detector=0, nirfilter='Y')
              det = sim.detector(0, 1, 0, 'Y')
         """
+
         fname = self.get_detector_data_file_path(pid, dither, nirfilter)
+        if verbose:
+            print(fname)
 
-        try:
-            raise NotImplementedError('''not implemented''')
-            retval = None
-        except:
 
-            exposure = SurveyExposure.readFits(fname)
-            metadata = exposure.getMetadata()
-            det = exposure.getDetector(detector)
-            # sci = d.getScience().getArray()
-            # Tracer()()
-            # fobj = fits.open(fname)
-            # primaryHUD, sci, dq = fobj[0].header,\
-            #                       fobj[2*detector + 1],\
-            #                       fobj[2*detector + 2]
-            #
-            # construct a DetectorExposure object
-            retval = DetectorExposure(pid, dither, detector, nirfilter)
+        # open the exposure file and get the detector object
+        exposure = SurveyExposure.readFits(fname)
+        metadata = exposure.getMetadata()
+        det = exposure.getDetector(detector)
 
-            # set the/ sci object and from that set copy some keywords
-            retval._det = det
-            retval.set_keyword_attr_from_header_keywords()
+        # construct a DetectorExposure object
+        retval = DetectorExposure(pid, dither, detector, nirfilter)
 
-            # set the sci and mask and var layers
-            retval.sci = det.getScience().getArray()
-            retval.mask = det.getMask().getArray()
-            retval.var = det.getVariance().getArray()
+        # set the/ sci object and from that set copy some keywords
+        retval._det = det
+        retval.set_keyword_attr_from_header_keywords()
 
-            # get the location of the CR hits (for DQ only)
-            fobj = fits.open(self.get_detector_cr_data_file_path(pid, dither,
-                                                                 nirfilter))
-            sci_cr = fobj[2*detector + 1]
-            retval.crcount = sci_cr.header['COSMICS']
-            retval.cr = sci_cr.data > 0.0
+        # set the sci and mask and var layers
+        retval.sci = det.getScience().getArray()
+        retval.mask = det.getMask().getArray()
+        retval.var = det.getVariance().getArray()
 
-            # construct the wcs object and fetch the catalog
-            retval.wcs = wcs.WCS(header=sci.header)
-            retval.catalog = self.fetch_catalog(pid, dither, nirfilter,
-                                                'STARCAT')
+        # get the location of the CR hits (for DQ only)
+        # fobj = fits.open(self.get_detector_cr_data_file_path(pid, dither,
+        #                                                      nirfilter))
+        # sci_cr = fobj[2*detector + 1]
+        # retval.crcount = sci_cr.header['COSMICS']
+        # retval.cr = sci_cr.data > 0.0
+
+        # construct the wcs object and fetch the catalog
+        retval.wcs = makeWcs(det.getMetadata())
+        retval.catalog = self.fetch_catalog(pid, dither, nirfilter, 'STARCAT')
 
         retval.planeDict = None
 
@@ -486,8 +504,16 @@ class Simulation(object):
         return fpath_cr
 
     def get_detector_bbox_wcs(self, pid=0, dither=1, detector=0, nirfilter='Y'):
-        fpath = self.get_detector_data_file_path(pid, dither, nirfilter)
-        return self._get_detector_bbox_wcs_from_file(fpath, detector=detector)
+        """return the detector bounding box in wcs coordinated. this is a
+        wrapper around DetectorExposure.bbox_wcs()
+
+        :param int pid: the pointing id
+        :param int dither: the dither index
+        :param int detector: the detector index
+        :param str nirfilter: the nir filter
+        :return:
+        """
+        return self.detector(pid, dither, detector, nirfilter).bbox_wcs()
 
     def plot_dither_bbox_for_pointing(self, pid=0, dither=1, nirfilter='Y',
                                       color='r', detectors=[],
@@ -513,9 +539,8 @@ class Simulation(object):
             dither_bounds = []
 
         # loop over the detector (by id) and plot the bbox
-        for detector in detectors:
-            detector_file = self.get_detector_bbox_wcs(pid, dither,
-                                                       detector, nirfilter)
+        for detector in detectors[0:10]:
+            print(detector)
             if outer_only is False:
                 self._plot_detector_bbox(pid, dither, detector, nirfilter,
                                          color)
@@ -548,8 +573,12 @@ class Simulation(object):
                                                nirfilter,
                                                outer_only=outer_only)
 
-    def plot_pointings(self, show_all_dithers=False, outer_only=True,
-                       show_sources=False, nirfilter='Y', **kwargs):
+    def plot_pointings(self,
+                       show_all_dithers=False,
+                       outer_only=True,
+                       show_sources=False,
+                       nirfilter='Y',
+                       **kwargs):
         """plots all the pointings for the simulated data.
         :param bool show_sources: if True, all the catalogs are read and the
          RA and DEC of the sources plotted.
@@ -565,7 +594,7 @@ class Simulation(object):
             pylab.plot(catalogs.RA, catalogs.DEC, '.')
 
         for pid in self.pointing_ids:
-            print pid
+            print(pid)
             if show_all_dithers:
                 self.plot_pointing_dithers(pid,
                                            outer_only=outer_only,
@@ -582,7 +611,7 @@ class Simulation(object):
         """Fetches the catalogs for all the exposures and returns them as
         a single catalog object"""
 
-        print 'collecting all the catalogs of pointings: '
+        print('collecting all the catalogs of pointings: ')
         all_catalogs = []
 
         # assume that all the dithers have the same catalog
@@ -640,6 +669,6 @@ class MDB(object):
 
         f = fits.open(distortion_file_path)
 
-        print 'opened distortion file:\n\t%s' % distortion_file_path
+        print('opened distortion file:\n\t%s' % distortion_file_path)
 
         return f[0]
