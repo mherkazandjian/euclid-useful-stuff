@@ -115,7 +115,7 @@ releases._add('SC2', sub_release='NIP_test3', isInitialized=True)
 releases._add('SC2', sub_release='NIP_R1')
 releases._add('SC2', sub_release='NIP_R1', isInitialized=True)
 releases._add('SC2', sub_release='NIP_R3')
-# releases._add('SC2', sub_release='NIP_R3', isInitialized=True)
+releases._add('SC2', sub_release='NIP_R3', isInitialized=True)
 
 
 class DetectorExposure(object):
