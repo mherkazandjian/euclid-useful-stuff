@@ -186,6 +186,7 @@ class DetectorExposure(object):
         retval = numpy.array([self.wcs.pixelToSky(x, y).getPosition(degrees)
                               for x, y in pixcrds],
                              'f8')
+
         return retval.reshape(retval.shape[0:2])
 
     def plot_bbox(self, pid=0, dither=1, detector=0, nirfilter='Y', color='r'):
@@ -274,15 +275,18 @@ class Simulation(object):
              TASK_DIR/data/*.fits
         """
 
-        sourceDir = os.path.join(self.rootdir, self.release.path)
-        lookFor = '*.fits'
+        source_dir = os.path.join(self.rootdir, self.release.path)
+        look_for = '*.fits'
 
         matches = []
-        for root, dirnames, filenames in os.walk(sourceDir):
-            for filename in fnmatch.filter(filenames, lookFor):
-                if os.path.split(root)[-1] == 'data':
-                    if 'CR-' not in filename:
-                       matches.append(os.path.join(root, filename))
+        for root, dirnames, filenames in os.walk(source_dir):
+            for filename in fnmatch.filter(filenames, look_for):
+                #if os.path.split(root)[-1] == 'data':
+                #    if 'CR-' not in filename:
+                #       matches.append(os.path.join(root, filename))
+                if 'CR-' not in filename:
+                    matches.append(os.path.join(root, filename))
+
         return matches
 
     @staticmethod
@@ -332,8 +336,8 @@ class Simulation(object):
                     continue
                 info[i][name] = metadata.get(name)
         print()
-
-        self.set_field_id_in_info_from_RA_DEC_of_primary_header(info)
+        #set_trace()
+        #self.set_field_id_in_info_from_RA_DEC_of_primary_header(info)
 
         if save:
             numpy.save(self._cache_info_file, info)
@@ -436,7 +440,7 @@ class Simulation(object):
 
         # construct the wcs object and fetch the catalog
         retval.wcs = makeWcs(det.getMetadata())
-        retval.catalog = self.fetch_catalog(pid, dither, nirfilter, 'STARCAT')
+        #retval.catalog = self.fetch_catalog(pid, dither, nirfilter, 'STARCAT')
 
         retval.planeDict = None
 
@@ -539,8 +543,8 @@ class Simulation(object):
             dither_bounds = []
 
         # loop over the detector (by id) and plot the bbox
-        for detector in detectors[0:10]:
-            print(detector)
+        for detector in detectors:
+
             if outer_only is False:
                 self._plot_detector_bbox(pid, dither, detector, nirfilter,
                                          color)
@@ -554,15 +558,16 @@ class Simulation(object):
             dither_bounds = numpy.array(dither_bounds)
 
             ra = [dither_bounds[0 , 0, 0],
-                  dither_bounds[3 , 0, 3],
-                  dither_bounds[15, 0, 2],
-                  dither_bounds[12, 0, 1],
+                  dither_bounds[3 , 3, 0],
+                  dither_bounds[15, 2, 0],
+                  dither_bounds[12, 1, 0],
                   dither_bounds[0 , 0, 0]]
-            dec = [dither_bounds[0 , 1, 0],
-                   dither_bounds[3 , 1, 3],
-                   dither_bounds[15, 1, 2],
+            dec = [dither_bounds[0 , 0, 1],
+                   dither_bounds[3 , 3, 1],
+                   dither_bounds[15, 2, 1],
                    dither_bounds[12, 1, 1],
-                   dither_bounds[0 , 1, 0]]
+                   dither_bounds[0 , 0, 1]]
+
             pylab.plot(ra, dec, color)
 
     def plot_pointing_dithers(self, pid, outer_only=True, nirfilter='Y'):
