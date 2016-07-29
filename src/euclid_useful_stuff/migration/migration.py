@@ -119,7 +119,7 @@ def get_all_branches(project):
     retval = []
     output, errors = prcs.communicate()
 
-    for branch in output.encode().strip().split('\n'):
+    for branch in output.decode().strip().split('\n'):
         branch_name = branch.replace('*', '').strip()
         retval.append(branch_name)
     return retval
