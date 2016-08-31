@@ -69,11 +69,17 @@ def migrate_project(base_svn_url,
     # clean the repo (branches/tags/remotes)
     create_tags(project_name)
     create_branches(project_name)
-    delete_all_remotes(project_name)
 
     # add the remotes and sync to gitlab
     add_remotes(project_name, base_git_url)
     sync(project_name)
+
+    # create the develop branch and merge the tags onto master
+    create_develop_branch(project_name)
+    merge_tags_onto_master(project_name)
+
+    # cleanup
+    delete_all_remotes(project_name)
 
 
 def run_command(cmd, *args, **kwargs):
@@ -162,12 +168,33 @@ def create_tags(project):
             if pattern in branch:
                 return True
         return False
-        
-    tag_branches = list(filter(is_a_tag_branch, all_branches))
+
+    tag_branches = find_all_tags(project)
 
     for branch in tag_branches:
         create_tag_from_branch(project, branch)
 
+
+def find_all_tags(project):
+    """return a list containing all the tag names
+
+    :param str project: the name of the project
+    :return: a list of strings of all the tags
+    """
+    svn_tag_patterns = ['origin/tags',
+                        'remotes/origin/tags']
+
+    all_branches = get_all_branches(project)
+
+
+    def is_a_tag_branch(branch):
+        for pattern in svn_tag_patterns:
+            if pattern in branch:
+                return True
+        return False
+
+
+    return  list(filter(is_a_tag_branch, all_branches))
 
 def create_branches(project):
     """create branches from non tags. The command is executed in the dir
@@ -226,3 +253,26 @@ def sync(project):
     run_command("git push -u gitlab --all", cwd=project)
     run_command("git push -u gitlab --tags", cwd=project)
 
+
+def create_develop_branch(project):
+    """create the "develop" branch from master
+
+    :param str project: the name of the project
+    """
+    run_command("git checkout master", cwd=project)
+    run_command("git branch develop", cwd=project)
+
+def merge_tags_onto_master(project):
+    """merge all the tags on top of master without fast forwarding
+
+    :param str project: the name of the project
+    """
+
+    run_command("git checkout master", cwd=project)
+
+    tags = find_all_tags(project)
+
+    for tag in tags:
+        run_command(
+            'git merge -s recursive -X theirs {tag} -m '
+            '"merge tag {tag}"'.format(tag=tag), cwd=project)

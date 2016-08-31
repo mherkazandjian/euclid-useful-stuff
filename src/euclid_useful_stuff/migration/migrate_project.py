@@ -12,8 +12,8 @@ import migration
 from migration import run_command
 
 # some project paths
-project_path = 'EC/SGS/PF/EuclidLib/ScientificLibs/LibCatalog'
-# project_path = 'EC/SGS/ST/4-2-09-TOOLS/Astromatic/Swarp'
+# project_path = 'EC/SGS/PF/EuclidLib/ScientificLibs/LibCatalog'
+project_path = 'EC/SGS/ST/4-2-09-TOOLS/Astromatic/Swarp'
 # project_path = 'EC/SGS/OU/NIR/NIRPipe/WP2500_CR'
 # project_path = 'EC/SGS/SDC/I/Projects/CTEigen'
 # project_path = 'EC/SGS/SDC/CH/Projects/Elements'
