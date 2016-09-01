@@ -70,13 +70,15 @@ def migrate_project(base_svn_url,
     create_tags(project_name)
     create_branches(project_name)
 
+    # create the develop branch and merge the tags onto master
+    create_develop_branch(project_name)
+
+    # re-create master as an orphan branch and merge tags on it
+    merge_tags_onto_master(project_name)
+
     # add the remotes and sync to gitlab
     add_remotes(project_name, base_git_url)
     sync(project_name)
-
-    # create the develop branch and merge the tags onto master
-    create_develop_branch(project_name)
-    merge_tags_onto_master(project_name)
 
     # cleanup
     delete_all_remotes(project_name)
@@ -268,7 +270,13 @@ def merge_tags_onto_master(project):
     :param str project: the name of the project
     """
 
-    run_command("git checkout master", cwd=project)
+    run_command("git checkout -B tmp-migration", cwd=project)
+    run_command("git branch -D master", cwd=project)
+    run_command("git checkout --orphan master", cwd=project)
+    run_command("git rm -fr .", cwd=project)
+    run_command('git commit -a --allow-empty --allow-empty-message -m ""',
+                cwd=project)
+    run_command("git branch -D tmp-migration", cwd=project)
 
     tags = find_all_tags(project)
 
