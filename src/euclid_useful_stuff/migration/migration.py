@@ -66,15 +66,8 @@ def migrate_project(base_svn_url,
     cmd = 'git svn fetch'
     run_command(cmd, cwd=project_name)
 
-    # clean the repo (branches/tags/remotes)
-    create_tags(project_name)
-    create_branches(project_name)
-
-    # create the develop branch and merge the tags onto master
-    create_develop_branch(project_name)
-
-    # re-create master as an orphan branch and merge tags on it
-    merge_tags_onto_master(project_name)
+    # make the branches compliant with the euclid workflow
+    re_organize_repo(project_name)
 
     # add the remotes and sync to gitlab
     add_remotes(project_name, base_git_url)
@@ -82,6 +75,19 @@ def migrate_project(base_svn_url,
 
     # cleanup
     delete_all_remotes(project_name)
+
+
+def re_organize_repo(project):
+    """create tags and add branches
+
+    :param str project: the name of the project
+    """
+    # clean the repo (branches/tags/remotes)
+    create_tags(project)
+    create_branches(project)
+
+    # create the develop branch and merge the tags onto master
+    create_develop_branch(project)
 
 
 def run_command(cmd, *args, **kwargs):
@@ -263,24 +269,3 @@ def create_develop_branch(project):
     """
     run_command("git checkout master", cwd=project)
     run_command("git branch develop", cwd=project)
-
-def merge_tags_onto_master(project):
-    """merge all the tags on top of master without fast forwarding
-
-    :param str project: the name of the project
-    """
-
-    run_command("git checkout -B tmp-migration", cwd=project)
-    run_command("git branch -D master", cwd=project)
-    run_command("git checkout --orphan master", cwd=project)
-    run_command("git rm -fr .", cwd=project)
-    run_command('git commit -a --allow-empty --allow-empty-message -m ""',
-                cwd=project)
-    run_command("git branch -D tmp-migration", cwd=project)
-
-    tags = find_all_tags(project)
-
-    for tag in tags:
-        run_command(
-            'git merge -s recursive -X theirs {tag} -m '
-            '"merge tag {tag}"'.format(tag=tag), cwd=project)
