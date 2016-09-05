@@ -70,11 +70,22 @@ def migrate_project(base_svn_url,
     re_organize_repo(project_name)
 
     # add the remotes and sync to gitlab
-    # add_remotes(project_name, base_git_url)
-    # sync(project_name)
+    add_remotes(project_name, base_git_url)
+    sync(project_name)
 
     # cleanup
     delete_all_remotes(project_name)
+
+def reset_master_to_first_commit(project):
+    """reset the master branch to the root commit
+
+    :return: None
+    """
+    run_command("git checkout master", cwd=project)
+    first_commit = run_command('git rev-list --max-parents=0 HEAD',
+                               cwd=project).replace('\n', '')
+    run_command("git reset --hard {}".format(
+        first_commit), cwd=project)
 
 
 def re_organize_repo(project):
@@ -89,11 +100,13 @@ def re_organize_repo(project):
     # create the develop branch and merge the tags onto master
     create_develop_branch(project)
 
-    run_command("git checkout master", cwd=project)
-    first_commit = run_command('git rev-list --max-parents=0 HEAD',
-                               cwd=project).replace('\n', '')
-    run_command("git reset --hard {}".format(
-        first_commit), cwd=project)
+    # reset master to the first commit and merge the tags into it
+    reset_master_to_first_commit(project)
+    merge_tags_onto_master(project)
+
+    # merge master on top of develop
+    run_command('git checkout develop', cwd=project)
+    run_command('git merge master -m "merge master"', cwd=project)
 
 def run_command(cmd, *args, **kwargs):
     """wrapped around Popen
@@ -277,3 +290,18 @@ def create_develop_branch(project):
     """
     run_command("git checkout master", cwd=project)
     run_command("git branch develop", cwd=project)
+
+def merge_tags_onto_master(project):
+    """merge all the tags on top of master without fast forwarding
+
+    :param str project: the name of the project
+    """
+
+    run_command("git checkout master")
+
+    tags = find_all_tags(project)
+
+    for tag in tags:
+        run_command(
+            'git merge -X theirs --no-ff {tag} -m '
+            '"merge tag {tag}"'.format(tag=tag), cwd=project)
