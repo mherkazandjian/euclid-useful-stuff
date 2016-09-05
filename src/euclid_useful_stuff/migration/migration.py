@@ -70,8 +70,8 @@ def migrate_project(base_svn_url,
     re_organize_repo(project_name)
 
     # add the remotes and sync to gitlab
-    add_remotes(project_name, base_git_url)
-    sync(project_name)
+    # add_remotes(project_name, base_git_url)
+    # sync(project_name)
 
     # cleanup
     delete_all_remotes(project_name)
@@ -89,6 +89,11 @@ def re_organize_repo(project):
     # create the develop branch and merge the tags onto master
     create_develop_branch(project)
 
+    run_command("git checkout master", cwd=project)
+    first_commit = run_command('git rev-list --max-parents=0 HEAD',
+                               cwd=project).replace('\n', '')
+    run_command("git reset --hard {}".format(
+        first_commit), cwd=project)
 
 def run_command(cmd, *args, **kwargs):
     """wrapped around Popen
@@ -98,8 +103,11 @@ def run_command(cmd, *args, **kwargs):
     :param kwargs: kwargs passed to Popen
     """
     print('>>> {}'.format(cmd))
-    Popen(shlex.split(cmd), *args, **kwargs).wait()
-
+    process = Popen(shlex.split(cmd), stdout=PIPE, *args, **kwargs)
+    process.wait()
+    stdout, stderr = process.communicate()
+    print(stdout)
+    return stdout
 
 def get_authors(path_to_svn_migration_script, repo_url):
     """
