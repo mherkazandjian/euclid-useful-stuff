@@ -244,7 +244,7 @@ def create_branches(project):
             if pattern in branch:
                 return False
         return True
-        
+
     remote_branches = list(filter(is_not_a_tag_branch, all_branches))
 
     for remote_branch in remote_branches:
@@ -273,7 +273,7 @@ def add_remotes(project, url_base):
     run_command("git remote add gitlab {}/{}.git".format(url_base, project),
                 cwd=project)
 
-    
+
 def sync(project):
     """
     git push -u origin --all project
@@ -313,3 +313,4 @@ def merge_tags_onto_master(project):
         tag_name = tag.split('/')[-1]
         run_command('git tag -d {}'.format(tag_name), cwd=project)
         run_command('git tag {}'.format(tag_name), cwd=project)
+
