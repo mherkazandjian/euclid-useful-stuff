@@ -76,6 +76,9 @@ def migrate_project(base_svn_url,
     # cleanup
     delete_all_remotes(project_name)
 
+    # ends
+    print(">>> End of migration from '%s/%s' to '%s'" % (base_svn_url, relative_project_url, base_git_url))
+
 def reset_master_to_first_commit(project):
     """reset the master branch to the root commit
 
