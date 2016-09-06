@@ -104,9 +104,6 @@ def re_organize_repo(project):
     reset_master_to_first_commit(project)
     merge_tags_onto_master(project)
 
-    # merge master on top of develop
-    run_command('git checkout develop', cwd=project)
-    run_command('git merge master -m "merge master"', cwd=project)
 
 def run_command(cmd, *args, **kwargs):
     """wrapped around Popen
@@ -222,7 +219,6 @@ def find_all_tags(project):
                 return True
         return False
 
-
     return  list(filter(is_a_tag_branch, all_branches))
 
 def create_branches(project):
@@ -302,6 +298,11 @@ def merge_tags_onto_master(project):
     tags = find_all_tags(project)
 
     for tag in tags:
+
         run_command(
             'git merge -X theirs --no-ff {tag} -m '
             '"merge tag {tag}"'.format(tag=tag), cwd=project)
+
+        tag_name = tag.split('/')[-1]
+        run_command('git tag -d {}'.format(tag_name), cwd=project)
+        run_command('git tag {}'.format(tag_name), cwd=project)
