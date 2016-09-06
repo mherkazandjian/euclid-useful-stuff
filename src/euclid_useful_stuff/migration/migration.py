@@ -12,7 +12,6 @@ svn to git
 import os
 from subprocess import Popen, PIPE
 import shlex
-import pdb
 
 
 def migrate_project(base_svn_url,
