@@ -306,7 +306,7 @@ def merge_tags_onto_master(project):
     :param str project: the name of the project
     """
 
-    run_command("git checkout master")
+    run_command("git checkout master", cwd=project)
 
     tags = find_all_tags(project)
 
