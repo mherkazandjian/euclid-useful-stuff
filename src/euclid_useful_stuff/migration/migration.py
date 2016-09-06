@@ -9,11 +9,12 @@ svn to git
 <seealso>
 </seealso>
 """
+
 import os
 from subprocess import Popen, PIPE
 import shlex
-import pdb
 
+_INDENT = ">>> "
 
 def migrate_project(base_svn_url,
                     base_git_url,
@@ -76,6 +77,12 @@ def migrate_project(base_svn_url,
     # cleanup
     delete_all_remotes(project_name)
 
+    # write final message
+    print(_INDENT + "End of migration from '{svn}/{path}' to '{git}'".format(
+        svn=base_svn_url,
+        path=relative_project_url,
+        git=base_git_url))
+
 def reset_master_to_first_commit(project):
     """reset the master branch to the root commit
 
@@ -112,11 +119,17 @@ def run_command(cmd, *args, **kwargs):
     :param args: args passed to Popen
     :param kwargs: kwargs passed to Popen
     """
-    print('>>> {}'.format(cmd))
+    print(_INDENT + '{}'.format(cmd))
     process = Popen(shlex.split(cmd), stdout=PIPE, *args, **kwargs)
     process.wait()
     stdout, stderr = process.communicate()
     print(stdout)
+
+    # test stderr against error and stop the script in case of error(s)
+    if stderr:
+        print(stderr)
+        raise TypeError("An error occur running the command: '%s'" % cmd)
+
     return stdout
 
 def get_authors(path_to_svn_migration_script, repo_url):
@@ -237,7 +250,7 @@ def create_branches(project):
             if pattern in branch:
                 return False
         return True
-        
+
     remote_branches = list(filter(is_not_a_tag_branch, all_branches))
 
     for remote_branch in remote_branches:
@@ -266,7 +279,7 @@ def add_remotes(project, url_base):
     run_command("git remote add gitlab {}/{}.git".format(url_base, project),
                 cwd=project)
 
-    
+
 def sync(project):
     """
     git push -u origin --all project
@@ -306,3 +319,4 @@ def merge_tags_onto_master(project):
         tag_name = tag.split('/')[-1]
         run_command('git tag -d {}'.format(tag_name), cwd=project)
         run_command('git tag {}'.format(tag_name), cwd=project)
+
