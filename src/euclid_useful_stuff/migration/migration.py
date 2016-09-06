@@ -76,6 +76,9 @@ def migrate_project(base_svn_url,
     # cleanup
     delete_all_remotes(project_name)
 
+    # ends
+    print(">>> End of migration from '%s/%s' to '%s'" % (base_svn_url, relative_project_url, base_git_url))
+
 def reset_master_to_first_commit(project):
     """reset the master branch to the root commit
 
@@ -117,6 +120,9 @@ def run_command(cmd, *args, **kwargs):
     process.wait()
     stdout, stderr = process.communicate()
     print(stdout)
+    if stderr:
+        print(stderr)
+        raise TypeError("An error occur running the command: '%s'" % cmd)
     return stdout
 
 def get_authors(path_to_svn_migration_script, repo_url):
