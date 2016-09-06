@@ -9,10 +9,12 @@ svn to git
 <seealso>
 </seealso>
 """
+
 import os
 from subprocess import Popen, PIPE
 import shlex
 
+_INDENT = ">>> "
 
 def migrate_project(base_svn_url,
                     base_git_url,
@@ -75,6 +77,12 @@ def migrate_project(base_svn_url,
     # cleanup
     delete_all_remotes(project_name)
 
+    # write final message
+    print(_INDENT + "End of migration from '{svn}/{path}' to '{git}'".format(
+        svn=base_svn_url,
+        path=relative_project_url,
+        git=base_git_url))
+
 def reset_master_to_first_commit(project):
     """reset the master branch to the root commit
 
@@ -111,7 +119,7 @@ def run_command(cmd, *args, **kwargs):
     :param args: args passed to Popen
     :param kwargs: kwargs passed to Popen
     """
-    print('>>> {}'.format(cmd))
+    print(_INDENT + '{}'.format(cmd))
     process = Popen(shlex.split(cmd), stdout=PIPE, *args, **kwargs)
     process.wait()
     stdout, stderr = process.communicate()
