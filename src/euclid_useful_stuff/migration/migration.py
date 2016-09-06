@@ -124,6 +124,12 @@ def run_command(cmd, *args, **kwargs):
     process.wait()
     stdout, stderr = process.communicate()
     print(stdout)
+
+    # test stderr against error and stop the script in case of error(s)
+    if stderr:
+        print(stderr)
+        raise TypeError("An error occur running the command: '%s'" % cmd)
+
     return stdout
 
 def get_authors(path_to_svn_migration_script, repo_url):
