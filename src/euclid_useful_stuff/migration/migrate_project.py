@@ -6,7 +6,9 @@ python, migration, Git, SVN, main, script
 Main script that migrates an Euclid repo from lousy SVN to Git.
 
 After getting the script you simply need to type:
-python migrate_project.py http://euclid.esac.esa.int/svn http://euclid-git.roe.ac.uk/mkazandj EC/SGS/ST/4-2-09-TOOLS/Astromatic/Swarp --authors=authors.txt
+
+   ~> python migrate_project.py http://euclid.esac.esa.int/svn http://euclid-git.roe.ac.uk/mkazandj EC/SGS/ST/4-2-09-TOOLS/Astromatic/Swarp --authors=authors.txt
+
 </description>
 <seealso>
 </seealso>
@@ -89,21 +91,22 @@ if __name__ == "__main__":
         type=valid_url,
         metavar="URL",
         help='Base SVN URL, must be equal to "http://euclid.esac.esa.int/svn"')
+
     parser.add_argument(
         "base_git_url",
         action="store",
         type=valid_url,
         metavar="URL",
-        help='Base Git URL, it must begins with\
-"http://euclid-git.roe.ac.uk/USERNAME"')
+        help='Base Git URL, it must begins with'
+             '"http://euclid-git.roe.ac.uk/USERNAME"')
 
     parser.add_argument(
         "relative_project_url",
         action="store",
         type=str,
         metavar="PATH",
-        help='Relative project path in the SVN repository. Eg:\
-"EC/SGS/ST/4-2-09-TOOLS/Astromatic/Swarp"')
+        help='Relative project path in the SVN repository. Eg: '
+             '"EC/SGS/ST/4-2-09-TOOLS/Astromatic/Swarp"')
 
     parser.add_argument(
         "--authors",
@@ -111,8 +114,8 @@ if __name__ == "__main__":
         type=valid_file,
         metavar="FILE",
         default="authors.txt",
-        help="Authors file formatted like: login = Author Name <email>\
-DEFAULT=authors.txt")
+        help="Authors file formatted like: login = Author Name <email>"
+             "DEFAULT=authors.txt")
 
     # Parse command line
     args = parser.parse_args()

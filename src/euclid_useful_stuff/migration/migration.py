@@ -16,6 +16,7 @@ import shlex
 
 _INDENT = ">>> "
 
+
 def migrate_project(base_svn_url,
                     base_git_url,
                     relative_project_url,
@@ -88,6 +89,7 @@ def migrate_project(base_svn_url,
         path=relative_project_url,
         git=base_git_url))
 
+
 def reset_master_to_first_commit(project):
     """reset the master branch to the root commit
 
@@ -136,25 +138,6 @@ def run_command(cmd, *args, **kwargs):
         raise TypeError("An error occur running the command: '%s'" % cmd)
 
     return stdout
-
-
-def get_authors(path_to_svn_migration_script, repo_url):
-    """
-    dump the authors list into a file called authors.txt
-
-    :param str path_to_svn_migration_script: path to the jar file of script
-     that can be found on # https://bitbucket.org/atlassian/svn-migration-scripts/downloads/svn-migration-scripts.jar
-    :param str repo_url: the url to svn repository
-    """
-    cmd = 'java -jar {} authors {}'.format(
-        os.path.expanduser(path_to_svn_migration_script),
-        repo_url)
-
-    prcs = Popen(shlex.split(cmd), stdout=PIPE)
-    stdout, stderr = prcs.communicate()
-
-    with open('authors.txt', 'w') as fobj:
-        fobj.write(stdout.decode())
 
 
 def get_all_branches(project):
@@ -328,4 +311,3 @@ def merge_tags_onto_master(project):
         tag_name = tag.split('/')[-1]
         run_command('git tag -d {}'.format(tag_name), cwd=project)
         run_command('git tag {}'.format(tag_name), cwd=project)
-
