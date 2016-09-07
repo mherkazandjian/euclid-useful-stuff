@@ -1,9 +1,12 @@
 """
 <keywords>
-python, migration, git, svn, main, script
+python, migration, Git, SVN, main, script
 </keywords>
 <description>
-main script that migrates a euclid repo from lousy svn to git
+Main script that migrates an Euclid repo from lousy SVN to Git.
+
+After getting the script you simply need to type:
+python migrate_project.py http://euclid.esac.esa.int/svn http://euclid-git.roe.ac.uk/mkazandj EC/SGS/ST/4-2-09-TOOLS/Astromatic/Swarp --authors=authors.txt
 </description>
 <seealso>
 </seealso>
