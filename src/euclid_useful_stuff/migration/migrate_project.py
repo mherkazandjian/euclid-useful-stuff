@@ -15,6 +15,7 @@ import re
 import migration
 from migration import run_command
 
+
 def valid_url(url):
     """
     Checks if the given URL is a valid URL HTTP/FTP[s]://somethig
@@ -23,14 +24,15 @@ def valid_url(url):
     """
     # Django based URL regex
     regex = re.compile(
-        r'^(?:http|ftp)s?://' # http:// or https://
-        r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|' #domain...
-        r'localhost|' #localhost...
-        r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})' # ...or ip
-        r'(?::\d+)?' # optional port
+        r'^(?:http|ftp)s?://'  # http:// or https://
+        r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|'  # -
+        r'[A-Z0-9-]{2,}\.?)|'  # ..>domain...
+        r'localhost|'  # localhost...
+        r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'  # ...or ip
+        r'(?::\d+)?'  # optional port
         r'(?:/?|[/?]\S+)$', re.IGNORECASE)
 
-    # Test the URL and raise an error if it doesn't match the regular expression
+    # Test the URL and raise an error if doesn't match the regular expression
     if regex.match(url):
         return url
     else:
@@ -46,7 +48,7 @@ def migrate_project(base_svn_url, base_git_url, relative_project_url):
     :param relative_project_url: The relative path of the project on the svn
      repo.
     """
-    # migrate the project
+    # Migrate the project
     migration.migrate_project(base_svn_url=base_svn_url,
                               base_git_url=base_git_url,
                               relative_project_url=relative_project_url)
@@ -58,21 +60,25 @@ if __name__ == "__main__":
         description="Euclid migration script from SVN to Git")
 
     # Add arguments to parser
-    parser.add_argument("base_svn_url",
-                        action="store",
-                        type=valid_url,
-                        metavar="URL",
-                        help='Base SVN URL, must be equal to "http://euclid.esac.esa.int/svn"')
-    parser.add_argument("base_git_url",
-                        action="store",
-                        type=valid_url,
-                        metavar="URL",
-                        help='Base Git URL, it must begins with "http://euclid-git.roe.ac.uk"')
-    parser.add_argument("relative_project_url",
-                        action="store",
-                        type=str,
-                        metavar="PATH",
-                        help='Relative project path in the SVN repository. Eg: "EC/SGS/ST/4-2-09-TOOLS/Astromatic/Swarp"')
+    parser.add_argument(
+        "base_svn_url",
+        action="store",
+        type=valid_url,
+        metavar="URL",
+        help='Base SVN URL, must be equal to "http://euclid.esac.esa.int/svn"')
+    parser.add_argument(
+        "base_git_url",
+        action="store",
+        type=valid_url,
+        metavar="URL",
+        help='Base Git URL, it must begins with "http://euclid-git.roe.ac.uk"')
+    parser.add_argument(
+        "relative_project_url",
+        action="store",
+        type=str,
+        metavar="PATH",
+        help='Relative project path in the SVN repository. Eg:\
+"EC/SGS/ST/4-2-09-TOOLS/Astromatic/Swarp"')
 
     # Parse command line
     args = parser.parse_args()
@@ -81,4 +87,3 @@ if __name__ == "__main__":
     migrate_project(args.base_svn_url,
                     args.base_git_url,
                     args.relative_project_url)
-

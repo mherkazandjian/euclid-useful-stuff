@@ -132,6 +132,7 @@ def run_command(cmd, *args, **kwargs):
 
     return stdout
 
+
 def get_authors(path_to_svn_migration_script, repo_url):
     """
     dump the authors list into a file called authors.txt
@@ -188,7 +189,9 @@ def create_branch_from_remote(project, branch):
     :param str branch:
     """
     run_command('git checkout {}'.format(branch), cwd=project)
-    run_command('git checkout -B {}'.format(branch.split('/')[-1]), cwd=project)
+    run_command('git checkout -B {}'.format(branch.split('/')[-1]),
+                cwd=project)
+
 
 def create_tags(project):
     """given a string list of branches, all branches that match pattens
@@ -225,14 +228,14 @@ def find_all_tags(project):
 
     all_branches = get_all_branches(project)
 
-
     def is_a_tag_branch(branch):
         for pattern in svn_tag_patterns:
             if pattern in branch:
                 return True
         return False
 
-    return  list(filter(is_a_tag_branch, all_branches))
+    return list(filter(is_a_tag_branch, all_branches))
+
 
 def create_branches(project):
     """create branches from non tags. The command is executed in the dir
@@ -299,6 +302,7 @@ def create_develop_branch(project):
     """
     run_command("git checkout master", cwd=project)
     run_command("git branch develop", cwd=project)
+
 
 def merge_tags_onto_master(project):
     """merge all the tags on top of master without fast forwarding
