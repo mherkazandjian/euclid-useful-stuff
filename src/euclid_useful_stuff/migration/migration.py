@@ -18,7 +18,8 @@ _INDENT = ">>> "
 
 def migrate_project(base_svn_url,
                     base_git_url,
-                    relative_project_url):
+                    relative_project_url,
+                    authorsfile):
     """
     Migrates an svn project to a git repo. In the example below, a project
     at the svn url http://aaa.bbb.ccc/svn/MY/PROJECT/REL/PATH/myProjName
@@ -46,21 +47,25 @@ def migrate_project(base_svn_url,
     :param base_git_url: The base url of the git repo
     :param relative_project_url: The relative path of the project on the svn
      repo.
+    :param authorsfile: An ASCII file that contains the authors list formatted
+     like: login = Authors Name <email>
     """
 
     # get the project name from the project path
     project_name = relative_project_url.split('/')[-1]
 
     # clone the repository
-    cmd = ('git svn clone --stdlayout --authors-file=authors.txt '
+    cmd = ('git svn clone --stdlayout --authors-file={authorsfile} '
            '{euclid_svn}/{project_path} {project_name}').format(
         euclid_svn=base_svn_url,
         project_path=relative_project_url,
-        project_name=project_name)
+        project_name=project_name,
+        authorsfile=authorsfile)
     run_command(cmd)
 
     # add the authors file
-    cmd = 'git config svn.authorsfile ../authors.txt'
+    cmd = 'git config svn.authorsfile {authorsfile}'.format(
+        authorsfile=authorsfile)
     run_command(cmd, cwd=project_name)
 
     # fetch the repo
