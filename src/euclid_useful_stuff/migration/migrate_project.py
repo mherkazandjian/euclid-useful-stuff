@@ -96,6 +96,7 @@ if __name__ == "__main__":
         metavar="URL",
         help='Base Git URL, it must begins with\
 "http://euclid-git.roe.ac.uk/USERNAME"')
+
     parser.add_argument(
         "relative_project_url",
         action="store",
@@ -103,6 +104,7 @@ if __name__ == "__main__":
         metavar="PATH",
         help='Relative project path in the SVN repository. Eg:\
 "EC/SGS/ST/4-2-09-TOOLS/Astromatic/Swarp"')
+
     parser.add_argument(
         "--authors",
         action="store",
