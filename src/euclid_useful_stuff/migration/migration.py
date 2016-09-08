@@ -17,10 +17,11 @@ import shlex
 _INDENT = ">>> "
 
 
-def migrate_project(base_svn_url,
-                    base_git_url,
-                    relative_project_url,
-                    authorsfile):
+def migrate_project(base_svn_url=None,
+                    base_git_url=None,
+                    relative_project_url=None,
+                    authorsfile=None,
+                    project_new_name=None):
     """
     Migrates an svn project to a git repo. In the example below, a project
     at the svn url http://aaa.bbb.ccc/svn/MY/PROJECT/REL/PATH/myProjName
@@ -50,10 +51,15 @@ def migrate_project(base_svn_url,
      repo.
     :param authorsfile: An ASCII file that contains the authors list formatted
      like: login = Authors Name <email>
+    :param project_new_name: The name of the project directory that will
+     contain the migrated git repository.
     """
 
     # get the project name from the project path
-    project_name = relative_project_url.split('/')[-1]
+    if project_new_name is None:
+        project_name = relative_project_url.split('/')[-1]
+    else:
+        project_name = project_new_name
 
     # clone the repository
     cmd = ('git svn clone --stdlayout --authors-file={authorsfile} '
