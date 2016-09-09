@@ -58,27 +58,6 @@ def valid_file(fname):
         raise IOError("No such file '{}'".format(fname))
 
 
-def migrate_project(base_svn_url,
-                    base_git_url,
-                    relative_project_url,
-                    authorsfile):
-    """
-    Migrates a project from SVN to Git
-
-    :param base_svn_url: The base url of the svn repo
-    :param base_git_url: The base url of the git repo
-    :param relative_project_url: The relative path of the project on the svn
-     repo.
-    :param authorsfile: An ASCII file that contains the authors list formatted
-     like: login = Authors Name <email>
-    """
-    # Migrate the project
-    migration.migrate_project(base_svn_url=base_svn_url,
-                              base_git_url=base_git_url,
-                              relative_project_url=relative_project_url,
-                              authorsfile=authorsfile)
-
-
 if __name__ == "__main__":
     # Create argument parser
     parser = argparse.ArgumentParser(
@@ -117,11 +96,21 @@ if __name__ == "__main__":
         help="Authors file formatted like: login = Author Name <email>"
              "DEFAULT=authors.txt")
 
+    parser.add_argument(
+        "--project-new-name",
+        action="store",
+        dest='project_new_name',
+        type=str,
+        metavar="STRING",
+        default=None,
+        help="The new mae of the project dir (Git project)")
+
     # Parse command line
     args = parser.parse_args()
 
     # Run main function for project migration
-    migrate_project(args.base_svn_url,
-                    args.base_git_url,
-                    args.relative_project_url,
-                    args.authors)
+    migration.migrate_project(base_svn_url=args.base_svn_url,
+                              base_git_url=args.base_git_url,
+                              relative_project_url=args.relative_project_url,
+                              authorsfile=args.authors,
+                              project_new_name=args.project_new_name)
