@@ -67,35 +67,31 @@ if __name__ == "__main__":
         description="Euclid migration script from SVN to Git")
 
     parser.add_argument(
-        "base_git_repo",
-        action="store",
+        "--base-git-repo",
+        dest='base_git_repo',
         type=str,
-        metavar="URL",
+        required=True,
         help='Base Git repository (personal or PF / OU / ST..)')
 
     parser.add_argument(
-        "relative_project_url",
-        action="store",
+        "--relative-project-url",
+        dest="relative_project_url",
         type=str,
-        metavar="PATH",
+        required=True,
         help='Relative project path in the SVN repository. Eg: '
              '"EC/SGS/ST/4-2-09-TOOLS/Astromatic/Swarp"')
 
     parser.add_argument(
         "--authors",
-        action="store",
         type=valid_file,
-        metavar="FILE",
         default="authors.txt",
         help="Authors file formatted like: login = Author Name <email>"
              "DEFAULT=authors.txt")
 
     parser.add_argument(
         "--project-new-name",
-        action="store",
         dest='project_new_name',
         type=str,
-        metavar="STRING",
         default=None,
         help="The new mae of the project dir (Git project)")
 
@@ -104,8 +100,8 @@ if __name__ == "__main__":
 
     # Run main function for project migration
     migration.migrate_project(base_svn_url=BASE_SVN_URL,
-                              base_git_url=os.join(BASE_GIT_URL,
-                                                   args.base_git_repo),
+                              base_git_url=join(BASE_GIT_URL,
+                                                args.base_git_repo),
                               relative_project_url=args.relative_project_url,
                               authorsfile=args.authors,
                               project_new_name=args.project_new_name)
