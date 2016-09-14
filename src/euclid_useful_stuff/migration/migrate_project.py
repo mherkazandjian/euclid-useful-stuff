@@ -19,6 +19,10 @@ import re
 import os
 
 import migration
+from os.path import join
+
+BASE_SVN_URL = "http://euclid.esac.esa.int/svn"
+BASE_GIT_URL = "http://euclid-git.roe.ac.uk"
 
 
 def valid_url(url):
@@ -62,21 +66,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Euclid migration script from SVN to Git")
 
-    # Add arguments to parser
     parser.add_argument(
-        "base_svn_url",
+        "base_git_repo",
         action="store",
-        type=valid_url,
+        type=str,
         metavar="URL",
-        help='Base SVN URL, must be equal to "http://euclid.esac.esa.int/svn"')
-
-    parser.add_argument(
-        "base_git_url",
-        action="store",
-        type=valid_url,
-        metavar="URL",
-        help='Base Git URL, it must begins with'
-             '"http://euclid-git.roe.ac.uk/USERNAME"')
+        help='Base Git repository (personal or PF / OU / ST..)')
 
     parser.add_argument(
         "relative_project_url",
@@ -108,8 +103,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # Run main function for project migration
-    migration.migrate_project(base_svn_url=args.base_svn_url,
-                              base_git_url=args.base_git_url,
+    migration.migrate_project(base_svn_url=BASE_SVN_URL,
+                              base_git_url=os.join(BASE_GIT_URL,
+                                                   args.base_git_repo),
                               relative_project_url=args.relative_project_url,
                               authorsfile=args.authors,
                               project_new_name=args.project_new_name)
