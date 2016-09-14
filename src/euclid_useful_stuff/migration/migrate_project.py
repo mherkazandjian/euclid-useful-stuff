@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 """
 <keywords>
 python, migration, Git, SVN, main, script
@@ -61,8 +63,8 @@ def valid_file(fname):
         raise IOError("No such file '{}'".format(fname))
 
 
-if __name__ == "__main__":
-    # Create argument parser
+def parse_args():
+    """Create argument parser"""
     parser = argparse.ArgumentParser(
         description="Euclid migration script from SVN to Git")
 
@@ -95,9 +97,13 @@ if __name__ == "__main__":
         default=None,
         help="The new mae of the project dir (Git project)")
 
-    # Parse command line
-    args = parser.parse_args()
+    return parser.parse_args()
 
+
+def main():
+    """Main program"""
+    # Parse args
+    args = parse_args()
     # Run main function for project migration
     migration.migrate_project(base_svn_url=BASE_SVN_URL,
                               base_git_url=join(BASE_GIT_URL,
@@ -105,3 +111,7 @@ if __name__ == "__main__":
                               relative_project_url=args.relative_project_url,
                               authorsfile=args.authors,
                               project_new_name=args.project_new_name)
+
+
+if __name__ == "__main__":
+    main()
