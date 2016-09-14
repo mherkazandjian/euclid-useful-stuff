@@ -1,19 +1,23 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-<keywords>
-python, migration, Git, SVN, main, script
-</keywords>
-<description>
-Main script that migrates an Euclid repo from lousy SVN to Git.
+Script to migrate a Euclid SVN repo to the new Git repo.
 
-After getting the script you simply need to type:
+Usage:
+    ./migrate_project.py --relative-project-url <path/in/svn/repo>
+                         --base-git-repo <username>
+                         --project-new-name <name>
+                         --authors <author_file.txt>
 
-   ~> python migrate_project.py http://euclid.esac.esa.int/svn http://euclid-git.roe.ac.uk/mkazandj EC/SGS/ST/4-2-09-TOOLS/Astromatic/Swarp --authors=authors.txt
+Example:
+    ./migrate_project.py --relative-project-url EC/SGS/ST/4-2-09-TOOLS/Astromatic/Swarp
+                         --base-git-repo ST-TOOLS
+                         --project-new-name Swarp
+                         --authors author.txt
 
-</description>
-<seealso>
-</seealso>
+Keywords:
+    python, migration, Git, SVN, script
+
 """
 
 import argparse
@@ -73,7 +77,7 @@ def parse_args():
         dest='base_git_repo',
         type=str,
         required=True,
-        help='Base Git repository (personal or PF / OU / ST..)')
+        help='Base Git repository: username OR group name')
 
     parser.add_argument(
         "--relative-project-url",
