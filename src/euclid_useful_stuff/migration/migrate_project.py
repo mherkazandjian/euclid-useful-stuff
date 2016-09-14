@@ -19,7 +19,6 @@ import re
 import os
 
 import migration
-from migration import run_command
 
 
 def valid_url(url):
