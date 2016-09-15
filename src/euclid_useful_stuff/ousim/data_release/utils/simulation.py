@@ -373,13 +373,13 @@ class Simulation(object):
     def fetch_catalog(self, pid=0, dither=1, nirfilter='Y', cattype='STARCAT'):
         """get the catalog data the fits file data"""
 
-        fitsfile = self.get_exposure_data_file_path(pid, dither, nirfilter)
-        matchpath = os.path.abspath(
-                        os.path.join(
+        fits_file = self.get_exposure_data_file_path(pid, dither, nirfilter)
+        match_path = os.path.abspath(
+                          os.path.join(
                            os.path.join(
-                              os.path.split(fitsfile)[-2],
+                              os.path.split(fits_file)[-2],
                                       '../', '*TUStarCatalog*.fits')))
-        catfilepath = glob.glob(matchpath)
+        catfilepath = glob.glob(match_path)
 
         assert len(catfilepath) == 1, 'should match exactly one catalog file'
 
@@ -391,6 +391,24 @@ class Simulation(object):
         return self.info['path'][((self.info['OBSID'] == pid) *
                                   (self.info['DITHSEQ'] == dither) *
                                   (self.info['FILTER'] == nirfilter))]
+
+    def exposure(self, pid=0, dither=1, nirfilter='Y', **kwargs):
+        """Give the pointing id, dither number and the filter, returns the
+        survey exposure object.
+
+        :param int pid: the pointing id
+        :param int dither: the index of the dither
+        :param nirfilter: not implemented
+        :return: SurveyExposure object
+
+        .. code-block:: python
+
+             exposure = sim.exposure(pid=0, dither=1, nirfilter='Y')
+             exposure = sim.detector(0, 1, 0, 'Y')
+        """
+        fname = self.get_exposure_data_file_path(pid, dither, nirfilter,
+                                                 **kwargs)
+        return SurveyExposure.readFits(fname)
 
     def detector(self, pid=0, dither=1, detector=0, nirfilter='Y',
                  verbose=True):
@@ -412,7 +430,6 @@ class Simulation(object):
         fname = self.get_detector_data_file_path(pid, dither, nirfilter)
         if verbose:
             print(fname)
-
 
         # open the exposure file and get the detector object
         exposure = SurveyExposure.readFits(fname)
@@ -479,11 +496,14 @@ class Simulation(object):
         retval += '\n'
         return retval
 
-    def get_exposure_data_file_path(self, pid=0, dither=1, nirfilter='Y'):
+    def get_exposure_data_file_path(self, pid=0, dither=1, nirfilter='Y',
+                                    **kwargs):
         """returns the path of the fits file containing the detector data"""
-        return self.get_detector_data_file_path(pid, dither, nirfilter)
+        return self.get_detector_data_file_path(pid, dither, nirfilter,
+                                                **kwargs)
 
-    def get_detector_data_file_path(self, pid=0, dither=1, nirfilter='Y'):
+    def get_detector_data_file_path(self, pid=0, dither=1, nirfilter='Y',
+                                    verbose=True):
         """returns the path of the fits file containing the detector data"""
         fpath = self.info['path'][ (self.info['OBSID'] == pid)*
                                    (self.info['DITHSEQ'] == dither)*
@@ -493,6 +513,8 @@ class Simulation(object):
                                 the specified detector''')
         else:
             assert len(fpath) == 1, 'there should be only one dectector file'
+            if verbose is True:
+                print(fpath[0])
             return fpath[0]
 
     def get_detector_cr_data_file_path(self, pid=0, dither=1, nirfilter='Y'):
@@ -599,7 +621,7 @@ class Simulation(object):
             pylab.plot(catalogs.RA, catalogs.DEC, '.')
 
         for pid in self.pointing_ids:
-            print(pid)
+            print('pointing id {}'.format(pid))
             if show_all_dithers:
                 self.plot_pointing_dithers(pid,
                                            outer_only=outer_only,
