@@ -1,17 +1,23 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 """
-<keywords>
-python, migration, Git, SVN, main, script
-</keywords>
-<description>
-Main script that migrates an Euclid repo from lousy SVN to Git.
+Script to migrate a Euclid SVN repo to the new Git repo.
 
-After getting the script you simply need to type:
+Usage:
+    ./migrate_project.py --relative-project-url <path/in/svn/repo>
+                         --base-git-repo <username>
+                         --project-new-name <name>
+                         --authors <author_file.txt>
 
-   ~> python migrate_project.py http://euclid.esac.esa.int/svn http://euclid-git.roe.ac.uk/mkazandj EC/SGS/ST/4-2-09-TOOLS/Astromatic/Swarp --authors=authors.txt
+Example:
+    ./migrate_project.py --relative-project-url EC/SGS/ST/4-2-09-TOOLS/Astromatic/Swarp
+                         --base-git-repo ST-TOOLS
+                         --project-new-name Swarp
+                         --authors author.txt
 
-</description>
-<seealso>
-</seealso>
+Keywords:
+    python, migration, Git, SVN, script
+
 """
 
 import argparse
@@ -19,7 +25,10 @@ import re
 import os
 
 import migration
-from migration import run_command
+from os.path import join
+
+BASE_SVN_URL = "http://euclid.esac.esa.int/svn"
+BASE_GIT_URL = "http://euclid-git.roe.ac.uk"
 
 
 def valid_url(url):
@@ -58,59 +67,55 @@ def valid_file(fname):
         raise IOError("No such file '{}'".format(fname))
 
 
-if __name__ == "__main__":
-    # Create argument parser
+def parse_args():
+    """Create argument parser"""
     parser = argparse.ArgumentParser(
         description="Euclid migration script from SVN to Git")
 
-    # Add arguments to parser
     parser.add_argument(
-        "base_svn_url",
-        action="store",
-        type=valid_url,
-        metavar="URL",
-        help='Base SVN URL, must be equal to "http://euclid.esac.esa.int/svn"')
-
-    parser.add_argument(
-        "base_git_url",
-        action="store",
-        type=valid_url,
-        metavar="URL",
-        help='Base Git URL, it must begins with'
-             '"http://euclid-git.roe.ac.uk/USERNAME"')
-
-    parser.add_argument(
-        "relative_project_url",
-        action="store",
+        "--base-git-repo",
+        dest='base_git_repo',
         type=str,
-        metavar="PATH",
+        required=True,
+        help='Base Git repository: username OR group name')
+
+    parser.add_argument(
+        "--relative-project-url",
+        dest="relative_project_url",
+        type=str,
+        required=True,
         help='Relative project path in the SVN repository. Eg: '
              '"EC/SGS/ST/4-2-09-TOOLS/Astromatic/Swarp"')
 
     parser.add_argument(
         "--authors",
-        action="store",
         type=valid_file,
-        metavar="FILE",
         default="authors.txt",
         help="Authors file formatted like: login = Author Name <email>"
              "DEFAULT=authors.txt")
 
     parser.add_argument(
         "--project-new-name",
-        action="store",
         dest='project_new_name',
         type=str,
-        metavar="STRING",
         default=None,
         help="The new mae of the project dir (Git project)")
 
-    # Parse command line
-    args = parser.parse_args()
+    return parser.parse_args()
 
+
+def main():
+    """Main program"""
+    # Parse args
+    args = parse_args()
     # Run main function for project migration
-    migration.migrate_project(base_svn_url=args.base_svn_url,
-                              base_git_url=args.base_git_url,
+    migration.migrate_project(base_svn_url=BASE_SVN_URL,
+                              base_git_url=join(BASE_GIT_URL,
+                                                args.base_git_repo),
                               relative_project_url=args.relative_project_url,
                               authorsfile=args.authors,
                               project_new_name=args.project_new_name)
+
+
+if __name__ == "__main__":
+    main()
