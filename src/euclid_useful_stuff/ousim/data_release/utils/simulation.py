@@ -251,7 +251,7 @@ class Simulation(object):
         self.pointings = None
         '''A pointings object'''
 
-        self._detectors = numpy.arange(16) # asdasd
+        self._detectors = numpy.arange(16)
         ''' the indicies of the detectors'''
 
         self.pointing_ids = None
@@ -324,7 +324,8 @@ class Simulation(object):
                                ('FILTER', 'S1')])
 
         for i, path in enumerate(data_fits_files):
-            print('.'),
+            # print('.'),
+            print(path)
             sys.stdout.flush()
             info[i]['path'] = path
 
@@ -434,7 +435,7 @@ class Simulation(object):
         # open the exposure file and get the detector object
         exposure = SurveyExposure.readFits(fname)
         metadata = exposure.getMetadata()
-        det = exposure.getDetector(detector)
+        det = exposure.getDetector(int(detector))
 
         # construct a DetectorExposure object
         retval = DetectorExposure(pid, dither, detector, nirfilter)
@@ -509,8 +510,11 @@ class Simulation(object):
                                    (self.info['DITHSEQ'] == dither)*
                                    (self.info['FILTER'] == nirfilter)]
         if len(fpath) == 0:
-            raise ValueError('''not fits file file found for
-                                the specified detector''')
+            msg = ('not fits file file found for\n'
+                   '\t\tpointing id {}\n'
+                   '\t\tdither      {}\n'
+                   '\t\tfilter      {}\n'.format(pid, dither, nirfilter))
+            raise ValueError(msg)
         else:
             assert len(fpath) == 1, 'there should be only one dectector file'
             if verbose is True:
