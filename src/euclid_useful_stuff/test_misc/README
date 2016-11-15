@@ -1,0 +1,10 @@
+this directory contains all sorts of sample code and examples
+
+do not include .py files in this directory, include them in sub-directories
+e.g. instead of
+
+     tests_misc/test_survey.py
+
+have it in
+
+     test_misc/euclid_image_utils/test_survey_exposure.py
