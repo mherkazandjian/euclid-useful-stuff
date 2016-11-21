@@ -21,6 +21,7 @@ from astropy.io import fits
 
 from EuclidImageBinding import NispSurveyExposure as SurveyExposure
 from EuclidImageBinding import makeWcs, degrees
+import EuclidDmBindings.dpd.sim_stub as sim_stub
 
 import catalog
 
@@ -272,20 +273,21 @@ class Simulation(object):
 
     def find_all_data_fits_files(self):
         """returns the paths of the fits files in all the task directories. i.e
-             TASK_DIR/data/*.fits
+        TASK_DIR/data/*.fits
         """
-
         source_dir = os.path.join(self.rootdir, self.release.path)
         look_for = '*.fits'
 
         matches = []
         for root, dirnames, filenames in os.walk(source_dir):
             for filename in fnmatch.filter(filenames, look_for):
-                #if os.path.split(root)[-1] == 'data':
-                #    if 'CR-' not in filename:
-                #       matches.append(os.path.join(root, filename))
-                if 'CR-' not in filename:
+
+                if self.release.three_layer:
                     matches.append(os.path.join(root, filename))
+                else:
+                    if dirnames == [] and root.split('/')[-1] == 'data':
+                        if 'CR-' not in filename:
+                            matches.append(os.path.join(root, filename))
 
         return matches
 
@@ -324,18 +326,30 @@ class Simulation(object):
                                ('FILTER', 'S1')])
 
         for i, path in enumerate(data_fits_files):
-            # print('.'),
             print(path)
             sys.stdout.flush()
             info[i]['path'] = path
 
-            exposure = SurveyExposure.readFits(path)
-            metadata = exposure.getMetadata()
+            metadata = SurveyExposure.readFits(path).getMetadata()
 
             for name in info.dtype.names:
                 if name == 'path':
                     continue
-                info[i][name] = metadata.get(name)
+                if name == 'OBSID' and self.release.three_layer is False:
+                    task_dir = os.path.split(os.path.split(path)[-2])[-2]
+                    xml_file = '{}.{}'.format(
+                        os.path.join(task_dir, os.path.split(task_dir)[-1]),
+                        'xml')
+                    # get the observation ID from the xml file
+                    with open(xml_file, 'r') as xml_obj:
+                        level1_data = sim_stub.CreateFromDocument(
+                                                    xml_obj.read())
+                        raw_frame_info = level1_data.Data.NirRawFrame
+                        field_id = level1_data.Data.NirRawFrame.ObservationSequence.FieldId
+                        info[i][name] = int(field_id)
+                    continue
+                else:
+                    info[i][name] = metadata.get(name)
         print()
         #set_trace()
         #self.set_field_id_in_info_from_RA_DEC_of_primary_header(info)
@@ -384,7 +398,7 @@ class Simulation(object):
 
         assert len(catfilepath) == 1, 'should match exactly one catalog file'
 
-        return  catalog.Manager().catdata(catfilepath[0])
+        return catalog.Manager().catdata(catfilepath[0])
 
     def dither_files(self, pid=0, dither=1, nirfilter='Y'):
         """returns all the file names associated with a certain dither. i.e all
