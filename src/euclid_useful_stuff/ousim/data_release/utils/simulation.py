@@ -517,6 +517,17 @@ class Simulation(object):
         return self.get_detector_data_file_path(pid, dither, nirfilter,
                                                 **kwargs)
 
+    def get_exposure_xml_file(self, pid=0, dither=1, nirfilter='Y',
+                              **kwargs):
+        """return the path to the task xml file of the specified exposure"""
+        exposure_path = self.get_exposure_data_file_path(pid,
+                                                         dither,
+                                                         nirfilter, **kwargs)
+        task_dir = os.path.split(os.path.split(exposure_path)[-2])[-2]
+        xml_file = '{}.{}'.format(
+            os.path.join(task_dir, os.path.split(task_dir)[-1]), 'xml')
+        return xml_file
+
     def get_detector_data_file_path(self, pid=0, dither=1, nirfilter='Y',
                                     verbose=True):
         """returns the path of the fits file containing the detector data"""
