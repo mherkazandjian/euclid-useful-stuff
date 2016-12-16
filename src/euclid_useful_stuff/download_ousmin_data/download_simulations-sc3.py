@@ -55,7 +55,7 @@ def download_task(base_url, task_name, download_dir, auth):
 
     task_dir = os.path.join(download_dir, task_name[1:])
     if not os.path.exists(task_dir):
-        os.mkdir(task_dir)
+        os.makedirs(task_dir)
 
     # generate the url of the task dir  base_url/task
     task_url = urllib2.urlparse.urljoin(base_url, task_name)
