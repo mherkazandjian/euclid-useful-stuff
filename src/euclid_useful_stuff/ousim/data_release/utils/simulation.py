@@ -27,18 +27,22 @@ import catalog
 
 
 class SubReleaseInfo(object):
-    """
+    """object that defines the path to the release directory and the major and
+    minor versions.
 
+    The dir path is constructed by:
+
+             major/minor
+
+    e.g.
+
+             SC2/NIP_R3
     """
     def __init__(self):
         """
         constructor
         """
         self.path = None
-        self.three_layer = None
-
-    def __str__(self):
-        return self.path
 
     @property
     def major(self):
@@ -48,46 +52,51 @@ class SubReleaseInfo(object):
     def minor(self):
         return self.path.split('/')[1]
 
+    def __str__(self):
+        retval = '{}\n'.format(repr(self))
+        retval += 'path  = {}\n'.format(self.path)
+        retval += 'major = {}\n'.format(self.major)
+        retval += 'minor = {}\n'.format(self.minor)
+        return retval
+
 
 class SubRelease(object):
-
+    """an intermediate object used by _Release to attach a subrelease to it
+    as an attribute through the _add method.
+    """
     def __init__(self):
-        """
-        constructor
-        """
+        """constructor"""
         pass
 
-    def _add(self, release, sub_release, sub_sub_release, isInitialized):
-        if hasattr(self, sub_sub_release):
-            raise AttributeError('''sub-release already exists''')
-        else:
-            release_info = SubReleaseInfo()
-            release_info.path = '%s/%s/%s' % (release,
-                                              sub_release,
-                                              sub_sub_release)
-            release_info.three_layer = isInitialized
-            setattr(self, sub_sub_release, release_info)
+    def _add(self, release, sub_release):
+        """add the sub_release attribute to self has the release info as a
+        value.
+        """
+        release_info = SubReleaseInfo()
+        release_info.path = '%s/%s' % (release, sub_release)
+
+        setattr(self, sub_release, release_info)
+
 
 
 class _Releases(object):
+    """The major release object, e.g. (SC2 or SC3...)."""
     def __init__(self):
-        """
-        constructor
-        """
+        """constructor"""
         pass
 
-    def _add(self, release, sub_release, isInitialized=False):
+    def _add(self, release, sub_release):
+        """add a release and sub_release to self. e.g.
 
+        .. code-block:: python
+
+               releases._add('SC2', 'NIP_R3')
+        """
         if hasattr(self, release) is False:
             setattr(self, release, SubRelease())
 
-        if isInitialized:
-            sub_sub_release = sub_release + '_3L'
-        else:
-            sub_sub_release = sub_release
-
         r = getattr(self, release)
-        r._add(release, sub_release, sub_sub_release, isInitialized)
+        r._add(release, sub_release)
         setattr(self, release, r)
 
     def __iter__(self):
@@ -105,18 +114,9 @@ class _Releases(object):
         return '\n'.join([release.path for release in self])
 
 releases = _Releases()
-releases._add('SR1b', sub_release='NIPf')
-releases._add('SR1b', sub_release='NIPf', isInitialized=True)
-releases._add('SR1c', sub_release='NIPd')
-releases._add('SR1c', sub_release='NIPd', isInitialized=True)
-releases._add('SC2', sub_release='NIP_test0')
-releases._add('SC2', sub_release='NIP_test0', isInitialized=True)
-releases._add('SC2', sub_release='NIP_test3')
-releases._add('SC2', sub_release='NIP_test3', isInitialized=True)
-releases._add('SC2', sub_release='NIP_R1')
-releases._add('SC2', sub_release='NIP_R1', isInitialized=True)
 releases._add('SC2', sub_release='NIP_R3')
-releases._add('SC2', sub_release='NIP_R3', isInitialized=True)
+#releases._add('SC2', sub_release='NIP_R3_3L')
+releases._add('SC3', sub_release='NIP_T2')
 
 
 class DetectorExposure(object):
@@ -220,7 +220,6 @@ class Simulation(object):
                  rootdir=None,
                  release=None,
                  catalog='TU',
-                 three_layer=False,
                  regenerate_cache=False):
         """
         constructor
@@ -236,8 +235,8 @@ class Simulation(object):
         '''the sub release directory, NIPf, NIPd...etc'''
 
         self._cache_info_file = os.path.join(self.rootdir,
-                                self.release.path,
-                                'info-cache.npy')
+                                             self.release.path,
+                                             'info-cache.npy')
 
         self.info = None
         """A summary of the important keywords collected from all the fits
@@ -261,6 +260,8 @@ class Simulation(object):
         self.mdb = MDB(os.path.join(rootdir, 'MDB'))
         """the object of the MDB handler of the simulated data"""
 
+        self.set_release_specific_methods()
+
         if not regenerate_cache and os.path.isfile(self._cache_info_file):
             print('found cache info file:\n\t %s' % self._cache_info_file)
             self.info = numpy.load(self._cache_info_file)
@@ -271,88 +272,149 @@ class Simulation(object):
         self.setup_tasks()
         # self.setup_catalog_manager()
 
-    def find_all_data_fits_files(self):
-        """returns the paths of the fits files in all the task directories. i.e
-        TASK_DIR/data/*.fits
-        """
+    def find_all_xml_task_files(self):
+        """method to be bound at runtime depending on the release"""
+        raise NotImplementedError('''set at runtime''')
+
+    @staticmethod
+    def collect_metadata_from_task_file(task_xml_file_path):
+        """method to be bound at runtime depending on the release"""
+        raise NotImplementedError('''set at runtime''')
+
+    def _find_all_xml_task_files_sc2(self):
+        """return a list of all the task files for an SC2 release, files that
+        start with 'out_*.xml' are kept."""
         source_dir = os.path.join(self.rootdir, self.release.path)
-        look_for = '*.fits'
+        look_for = '*.xml'
 
         matches = []
         for root, dirnames, filenames in os.walk(source_dir):
             for filename in fnmatch.filter(filenames, look_for):
-
-                if self.release.three_layer:
+                if filename.startswith('out_'):
                     matches.append(os.path.join(root, filename))
-                else:
-                    if dirnames == [] and root.split('/')[-1] == 'data':
-                        if 'CR-' not in filename:
-                            matches.append(os.path.join(root, filename))
+        return matches
 
+    def _find_all_xml_task_files_sc3_nip_t2(self):
+        """return a list of all the task files for an SC3 release, files that
+        start with 'out_*.xml' are kept."""
+        source_dir = os.path.join(self.rootdir, self.release.path)
+        look_for = '*.xml'
+
+        matches = []
+        for root, dirnames, filenames in os.walk(source_dir):
+            for filename in fnmatch.filter(filenames, look_for):
+                print(filename)
+                if filename.startswith('outputNIP.'):
+                    matches.append(os.path.join(root, filename))
         return matches
 
     @staticmethod
-    def set_field_id_in_info_from_RA_DEC_of_primary_header(info):
-        """for each buch of RA,DEC pairs obtained from the primary header,
-        assume points withing a distance of 0.1 deg to corrspond to the same
-        field, thus assign a unique OBSID to them"""
-        r = numpy.sqrt(info['RA']**2 + info['DEC']**2)
-        from numpy import vstack,array
-        from numpy.random import rand
-        from scipy.cluster.vq import kmeans,vq
+    def collect_metadata_from_task_file_sc2(task_xml_file_path):
+        """collect the following data from the xml task file:
 
-        data = vstack((info['RA'], info['DEC'])).T
-        centroids,_ = kmeans(data, 3*3, iter=50, thresh=1e-9)
-        idxes,_ = vq(data,centroids)
-        for idx in idxes:
-            x, y = data[idxes==idx, 0], data[idxes==idx, 1]
-            pylab.plot(x, y, 'o')
-            pylab.text(x.mean(), y.mean(), str(idx))
-            info['OBSID'][idxes == idx] = idx
-        pylab.show()
+               path of fits file (from xml file)
+               field id          (from xml file)
+               dither sequence   (from xml file)
+               nir filter        (from xml file)
+               RA                (from fits file)
+               DEC               (from fits file)
+        """
+
+        # getting info from the xml file
+        with open(task_xml_file_path) as xml_obj:
+            level1_data = sim_stub.CreateFromDocument(xml_obj.read())
+
+            data = level1_data.Data
+            nir_raw_frame = data.NirRawFrame
+
+            fits_file_name = nir_raw_frame.FrameFitsFile.DataContainer.FileName
+            nir_filter = nir_raw_frame.FilterWheelPos
+            field_id = nir_raw_frame.ObservationSequence.FieldId
+            dither_seq = nir_raw_frame.ObservationSequence.DitherObservation
+
+        # getting info from the header of the fits file
+        fits_file_path = os.path.join(os.path.dirname(task_xml_file_path),
+                                      'data',
+                                      fits_file_name)
+        metadata = SurveyExposure.readFits(str(fits_file_path)).getMetadata()
+        ra, dec = metadata.get('RA'), metadata.get('DEC')
+
+        return {'FITS_PATH': str(fits_file_path),
+                'FILTER': str(nir_filter),
+                'FIELD_ID': int(field_id),
+                'DITHERSEQ': int(dither_seq),
+                'RA': ra,
+                'DEC': dec}
+
+    @staticmethod
+    def collect_metadata_from_task_file_sc3_nip_t2(task_xml_file_path):
+        """collect the following data from the xml task file:
+
+               path of fits file (from xml file)
+               field id          (from xml file)
+               dither sequence   (from xml file)
+               nir filter        (from xml file)
+               RA                (from fits file)
+               DEC               (from fits file)
+        """
+
+        # getting info from the xml file
+        with open(task_xml_file_path) as xml_obj:
+            level1_data = sim_stub.CreateFromDocument(xml_obj.read())
+
+            data = level1_data.Data
+            nir_raw_frame = data.NirRawFrame
+
+            fits_file_name = nir_raw_frame.FrameFitsFile.DataContainer.FileName
+            nir_filter = nir_raw_frame.FilterWheelPos
+            field_id = nir_raw_frame.ObservationSequence.FieldId
+            dither_seq = nir_raw_frame.ObservationSequence.DitherObservation
+
+        # getting info from the header of the fits file
+        fits_file_path = os.path.join(os.path.dirname(task_xml_file_path),
+                                      fits_file_name)
+        metadata = SurveyExposure.readFits(str(fits_file_path)).getMetadata()
+        ra, dec = metadata.get('RA'), metadata.get('DEC')
+
+        return {'FITS_PATH': str(fits_file_path),
+                'FILTER': str(nir_filter),
+                'FIELD_ID': int(field_id),
+                'DITHERSEQ': int(dither_seq),
+                'RA': ra,
+                'DEC': dec}
+
+    def set_release_specific_methods(self):
+        """set the methods to be used in getting metadata and paths"""
+        if self.release.path == 'SC2/NIP_R3':
+            self.find_all_xml_task_files = self._find_all_xml_task_files_sc2
+            self.collect_metadata_from_task_file = self.collect_metadata_from_task_file_sc2
+        if self.release.path == 'SC3/NIP_T2':
+            self.find_all_xml_task_files = self._find_all_xml_task_files_sc3_nip_t2
+            self.collect_metadata_from_task_file = self.collect_metadata_from_task_file_sc3_nip_t2
 
     def generate_info_cache(self, save=False):
-        """from all the data fits files, collect the information from the fits
-        primary header"""
-        data_fits_files = self.find_all_data_fits_files()
+        """from all the task files, collect the metadata from the xml files and
+        from the fits file"""
 
-        info = numpy.recarray(len(data_fits_files),
-                              [('path', 'S1000'),
+        task_files = self.find_all_xml_task_files()
+
+        info = numpy.recarray(len(task_files),
+                              [('TASK_XML_PATH', 'S1000'),
+                               ('FITS_PATH', 'S1000'),
+                               ('FILTER', 'S1'),
+                               ('FIELD_ID', 'i4'),
+                               ('DITHERSEQ', 'i4'),
                                ('RA', 'f8'),
-                               ('DEC', 'f8'),
-                               ('OBSID', 'i4'),
-                               ('DITHSEQ', 'i4'),
-                               ('EXPNO', 'i4'),
-                               ('FILTER', 'S1')])
+                               ('DEC', 'f8')])
 
-        for i, path in enumerate(data_fits_files):
-            print(path)
+        for task_index, task_file_path in enumerate(task_files):
+            metadata = self.collect_metadata_from_task_file(task_file_path)
+            print(task_file_path)
+            info[task_index]['TASK_XML_PATH'] = task_file_path
+            for key, value in metadata.items():
+                info[task_index][key] = value
             sys.stdout.flush()
-            info[i]['path'] = path
-
-            metadata = SurveyExposure.readFits(path).getMetadata()
-
-            for name in info.dtype.names:
-                if name == 'path':
-                    continue
-                if name == 'OBSID' and self.release.three_layer is False:
-                    task_dir = os.path.split(os.path.split(path)[-2])[-2]
-                    xml_file = '{}.{}'.format(
-                        os.path.join(task_dir, os.path.split(task_dir)[-1]),
-                        'xml')
-                    # get the observation ID from the xml file
-                    with open(xml_file, 'r') as xml_obj:
-                        level1_data = sim_stub.CreateFromDocument(
-                                                    xml_obj.read())
-                        raw_frame_info = level1_data.Data.NirRawFrame
-                        field_id = level1_data.Data.NirRawFrame.ObservationSequence.FieldId
-                        info[i][name] = int(field_id)
-                    continue
-                else:
-                    info[i][name] = metadata.get(name)
         print()
-        #set_trace()
-        #self.set_field_id_in_info_from_RA_DEC_of_primary_header(info)
 
         if save:
             numpy.save(self._cache_info_file, info)
@@ -372,9 +434,7 @@ class Simulation(object):
 
     def setup_tasks(self):
         """sets up the object for handling the available pointings (tasks)"""
-        # self.pointings = PointingTasks(taskfile=self.yamlfile,
-        #                                tasksdir=self.tasks_datadir)
-        self.pointing_ids = numpy.unique(self.info['OBSID'])
+        self.pointing_ids = numpy.unique(self.info['FIELD_ID'])
 
     def setup_catalog_manager(self):
         """setup the object that handles looking up catalogs"""
@@ -388,7 +448,7 @@ class Simulation(object):
     def fetch_catalog(self, pid=0, dither=1, nirfilter='Y', cattype='STARCAT'):
         """get the catalog data the fits file data"""
 
-        fits_file = self.get_exposure_data_file_path(pid, dither, nirfilter)
+        fits_file = self.get_exposure_fits_file_path(pid, dither, nirfilter)
         match_path = os.path.abspath(
                           os.path.join(
                            os.path.join(
@@ -403,9 +463,9 @@ class Simulation(object):
     def dither_files(self, pid=0, dither=1, nirfilter='Y'):
         """returns all the file names associated with a certain dither. i.e all
         the files mentioned in an xml file of a certain task"""
-        return self.info['path'][((self.info['OBSID'] == pid) *
-                                  (self.info['DITHSEQ'] == dither) *
-                                  (self.info['FILTER'] == nirfilter))]
+        return self.info['FITS_PATH'][((self.info['FIELD_ID'] == pid) *
+                                       (self.info['DITHERSEQ'] == dither) *
+                                       (self.info['FILTER'] == nirfilter))]
 
     def exposure(self, pid=0, dither=1, nirfilter='Y', **kwargs):
         """Give the pointing id, dither number and the filter, returns the
@@ -421,7 +481,7 @@ class Simulation(object):
              exposure = sim.exposure(pid=0, dither=1, nirfilter='Y')
              exposure = sim.detector(0, 1, 0, 'Y')
         """
-        fname = self.get_exposure_data_file_path(pid, dither, nirfilter,
+        fname = self.get_exposure_fits_file_path(pid, dither, nirfilter,
                                                  **kwargs)
         return SurveyExposure.readFits(fname)
 
@@ -442,7 +502,7 @@ class Simulation(object):
              det = sim.detector(0, 1, 0, 'Y')
         """
 
-        fname = self.get_detector_data_file_path(pid, dither, nirfilter)
+        fname = self.get_exposure_fits_file_path(pid, dither, nirfilter)
         if verbose:
             print(fname)
 
@@ -485,7 +545,7 @@ class Simulation(object):
     def num_dithers_in_pointing(self, tid, nirfilter='Y'):
         """given the pointing (task) id returns the number of dithers for that
          pointing"""
-        mask = (self.info['OBSID'] == tid)
+        mask = (self.info['FIELD_ID'] == tid)
         mask *= (self.info['FILTER'] == nirfilter)
 
         return numpy.where(mask)[0].size
@@ -497,7 +557,6 @@ class Simulation(object):
         retval += '\n%-15s: %s' % ('rootdir', self.rootdir)
         retval += '\n%-15s: %s' % ('release', self.release)
         retval += '\n%-15s: %s' % ('nip', self.nip)
-        retval += '\n%-15s: %s' % ('3L', self.release.three_layer)
         retval += '\n%-15s: %s' % ('n pointings', len(self.pointing_ids))
         retval += '\n%-15s: %s' % ('pointing ids', ' '.join(map(str, self.pointing_ids)))
 
@@ -511,29 +570,11 @@ class Simulation(object):
         retval += '\n'
         return retval
 
-    def get_exposure_data_file_path(self, pid=0, dither=1, nirfilter='Y',
-                                    **kwargs):
+    def get_exposure_fits_file_path(self, pid=0, dither=1, nirfilter='Y'):
         """returns the path of the fits file containing the detector data"""
-        return self.get_detector_data_file_path(pid, dither, nirfilter,
-                                                **kwargs)
-
-    def get_exposure_xml_file(self, pid=0, dither=1, nirfilter='Y',
-                              **kwargs):
-        """return the path to the task xml file of the specified exposure"""
-        exposure_path = self.get_exposure_data_file_path(pid,
-                                                         dither,
-                                                         nirfilter, **kwargs)
-        task_dir = os.path.split(os.path.split(exposure_path)[-2])[-2]
-        xml_file = '{}.{}'.format(
-            os.path.join(task_dir, os.path.split(task_dir)[-1]), 'xml')
-        return xml_file
-
-    def get_detector_data_file_path(self, pid=0, dither=1, nirfilter='Y',
-                                    verbose=True):
-        """returns the path of the fits file containing the detector data"""
-        fpath = self.info['path'][ (self.info['OBSID'] == pid)*
-                                   (self.info['DITHSEQ'] == dither)*
-                                   (self.info['FILTER'] == nirfilter)]
+        fpath = self.info['FITS_PATH'][(self.info['FIELD_ID'] == pid)*
+                                       (self.info['DITHERSEQ'] == dither)*
+                                       (self.info['FILTER'] == nirfilter)]
         if len(fpath) == 0:
             msg = ('not fits file file found for\n'
                    '\t\tpointing id {}\n'
@@ -542,15 +583,29 @@ class Simulation(object):
             raise ValueError(msg)
         else:
             assert len(fpath) == 1, 'there should be only one dectector file'
-            if verbose is True:
-                print(fpath[0])
+            return fpath[0]
+
+    def get_exposure_xml_file_path(self, pid=0, dither=1, nirfilter='Y',
+                                   **kwargs):
+        """return the path to the task xml file of the specified exposure"""
+        fpath = self.info['TASK_XML_PATH'][(self.info['FIELD_ID'] == pid)*
+                                           (self.info['DITHERSEQ'] == dither)*
+                                           (self.info['FILTER'] == nirfilter)]
+        if len(fpath) == 0:
+            msg = ('not xml file found for\n'
+                   '\t\tpointing id {}\n'
+                   '\t\tdither      {}\n'
+                   '\t\tfilter      {}\n'.format(pid, dither, nirfilter))
+            raise ValueError(msg)
+        else:
+            assert fpath.size == 1, 'there should be only matching task file'
             return fpath[0]
 
     def get_detector_cr_data_file_path(self, pid=0, dither=1, nirfilter='Y'):
         """returns the path of the cosmic ray mask file"""
         fpath = self.get_detector_data_file_path(pid, dither, nirfilter)
 
-        nirfilter = self.info['FILTER'][self.info['path'] == fpath][0]
+        nirfilter = self.info['FILTER'][self.info['FITS_PATH'] == fpath][0]
 
         fpath_cr = fpath.replace('EUC-TEST-%s' % nirfilter,
                                  'EUC-TEST-%sCR' % nirfilter)
