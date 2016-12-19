@@ -78,7 +78,6 @@ class SubRelease(object):
         setattr(self, sub_release, release_info)
 
 
-
 class _Releases(object):
     """The major release object, e.g. (SC2 or SC3...)."""
     def __init__(self):
